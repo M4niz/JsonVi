@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --grid-size: 30px;
+  --dot-size: 0px;
+  --dot-color:rgba(192, 191, 191, 0.952);
+  --line-color: rgba(161, 160, 160, 0.952);
+}
+
+.graph-paper-background {
+  background-color: rgb(144, 144, 144);
+  background-image: 
+    linear-gradient(var(--line-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-color) 1px, transparent 1px),
+    radial-gradient(var(--dot-color) var(--dot-size), transparent var(--dot-size));
+  background-size: var(--grid-size) var(--grid-size);
+  background-position: center center;
+}
