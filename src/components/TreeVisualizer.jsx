@@ -1,5 +1,4 @@
-import { tr } from "framer-motion/client";
-import React, { useCallback, useEffect, useRef, useMemo, useState} from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -7,238 +6,210 @@ import ReactFlow, {
   useEdgesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import jsonpath from "jsonpath";
 
-const TreeVisualizer = ({ jsonData, searchQuery }) => {
-  const parseJsonToFlow = useCallback((data, parentId = null, depth = 0, position = { x: 0, y: 0 }) => {
-    if (data === undefined) return { nodes: [], edges: [] };
+const BASE_COLORS = {
+  array: "#006224ff",
+  object: "#6300dcff",
+  value: "#2c4fffff",
+};
 
-    const nodes = [];
-    const edges = [];
+const HIGHLIGHT_STYLES = {
+  background: BASE_COLORS,
+  border: "3px solid #00aa03ff",
+  shadow: "0 0 16px rgba(91, 255, 54, 0.6)",
+};
 
-    const id = Math.random().toString(36).substr(2, 9);
-    let label = "";
-    let bgColor = "";
+const TreeVisualizer = ({ jsonData, searchQuery, onMatchResult }) => {
+  const parseJsonToFlow = useCallback(
+    (data, parentId = null, depth = 0, position = { x: 0, y: 0 }, path = "$") => {
+      if (data === undefined) return { nodes: [], edges: [], pathMap: {} };
 
-    if (Array.isArray(data)) {
-      label = "Array";
-      bgColor = "#006224ff";
-    } else if (typeof data === "object" && data !== null) {
-      label = "Object";
-      bgColor = "#6300dcff";
-    } else {
-      label = JSON.stringify(data);
-      bgColor = "#2c4fffff";
-    }
+      const nodes = [];
+      const edges = [];
+      const pathMap = {};
 
-    nodes.push({
-      id,
-      data: { label },
-      position: { x: position.x, y: position.y },
-      style: {
-        background: bgColor,
-        color: "#fff",
-        padding: 10,
-        borderRadius: 8,
-        fontWeight: 600,
-        fontSize: 14,
-        boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
-      },
-    });
+      const id = Math.random().toString(36).slice(2, 11);
 
-    if (parentId) {
-      edges.push({
-        id: `e${parentId}-${id}`,
-        source: parentId,
-        target: id,
-        style: { strokeWidth: 2, stroke: "#555" },
+      let type = "value";
+      let label = "";
+
+      if (Array.isArray(data)) {
+        type = "array";
+        label = "Array";
+      } else if (typeof data === "object" && data !== null) {
+        type = "object";
+        label = "Object";
+      } else {
+        type = "value";
+        label = JSON.stringify(data);
+      }
+
+      nodes.push({
+        id,
+        data: { label, type, path },
+        position: { x: position.x, y: position.y },
+        style: {
+          background: BASE_COLORS[type],
+          color: "#fff",
+          padding: 10,
+          borderRadius: 8,
+          fontWeight: 600,
+          fontSize: 14,
+          boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
+        },
       });
-    }
 
-    if (typeof data === "object" && data !== null) {
-      const entries = Array.isArray(data)
-        ? data.map((v, i) => [i, v])
-        : Object.entries(data);
+      pathMap[path] = id;
 
-      // Dynamic horizontal spacing based on number of children
-      const horizontalSpacing = Math.max(100, entries.length * 60);
-      const verticalSpacing = 180;
+      if (parentId) {
+        edges.push({
+          id: `e${parentId}-${id}`,
+          source: parentId,
+          target: id,
+          style: { strokeWidth: 2, stroke: "#555" },
+        });
+      }
 
-      entries.forEach(([key, value], index) => {
-        const childPosition = {
-          x: position.x + (index - (entries.length - 1) / 2) * horizontalSpacing,
-          y: position.y + verticalSpacing,
-        };
-        const { nodes: childNodes, edges: childEdges } = parseJsonToFlow(value, id, depth + 1, childPosition);
+      if (typeof data === "object" && data !== null) {
+        const entries = Array.isArray(data)
+          ? data.map((v, i) => [i, v])
+          : Object.entries(data);
 
-        if (childNodes && childNodes.length > 0)
-          childNodes[0].data.label = `${key}: ${childNodes[0].data.label}`;
+        const horizontalSpacing = Math.max(100, entries.length * 60);
+        const verticalSpacing = 180;
 
-        nodes.push(...(childNodes || []));
-        edges.push(...(childEdges || []));
-      });
-    }
+        entries.forEach(([key, value], index) => {
+          const childPosition = {
+            x: position.x + (index - (entries.length - 1) / 2) * horizontalSpacing,
+            y: position.y + verticalSpacing,
+          };
 
-    return { nodes, edges };
-  }, []);
+          const childPath = Array.isArray(data) ? `${path}[${key}]` : `${path}.${key}`;
+
+          const {
+            nodes: childNodes,
+            edges: childEdges,
+            pathMap: childPathMap,
+          } = parseJsonToFlow(value, id, depth + 1, childPosition, childPath);
+
+          if (childNodes && childNodes.length > 0) {
+            childNodes[0].data.label = `${key}: ${childNodes[0].data.label}`;
+          }
+
+          nodes.push(...(childNodes || []));
+          edges.push(...(childEdges || []));
+          Object.assign(pathMap, childPathMap);
+        });
+      }
+
+      return { nodes, edges, pathMap };
+    },
+    []
+  );
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState([]);
   const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState([]);
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [rfInstance, setRfInstance] = useState(null);
+  const [pathMap, setPathMap] = useState({});
 
- const rfInstanceRef = useRef(null);
-
-  // keep a ref copy of instance for callbacks
   useEffect(() => {
-    rfInstanceRef.current = reactFlowInstance;
-  }, [reactFlowInstance]);
+    if (!jsonData) return;
 
-  const parsed = useMemo(() => {
-    if (!jsonData) return null;
+    let parsed;
     try {
-      return typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
+      parsed = typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
     } catch {
-      return null;
-    }
-  }, [jsonData]);
-
-  useEffect(() => {
-    if (!parsed) return;
-
-    const { nodes = [], edges = [] } = parseJsonToFlow(parsed);
-    setRfNodes(nodes);
-    setRfEdges(edges);
-
-    if (reactFlowInstance) {
-      setTimeout(() => {
-        reactFlowInstance.fitView({ duration: 1000, padding: 0.2 });
-        reactFlowInstance.zoomTo(Math.min(reactFlowInstance.getZoom() * 1.5, 2.0), { duration: 1500 });
-      }, 300);
-    }
-  }, [parsed, parseJsonToFlow, reactFlowInstance, setRfNodes, setRfEdges]);
-
-  // Search / highlight / pan effect
-  useEffect(() => {
-    if (!searchQuery || !parsed) {
-      // Clear highlights: restore original style stored in data.origStyle
-      setRfNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          style: { ...(n.data && n.data.origStyle ? n.data.origStyle : n.style) },
-        }))
-      );
       return;
     }
 
-    try {
-      // run jsonpath query to get matched values
-      const matches = jsonpath.query(parsed, searchQuery);
-      // prepare match detection using values and path equality
-      const normalizedQueryPath = searchQuery.startsWith("$") ? searchQuery : searchQuery.startsWith(".") ? `$${searchQuery}` : `$.${searchQuery}`;
+    const { nodes = [], edges = [], pathMap: pm = {} } = parseJsonToFlow(parsed);
+    setRfNodes(nodes);
+    setRfEdges(edges);
+    setPathMap(pm);
 
-      // determine which nodes match
-      const matchedNodeId = (() => {
-        for (const n of rfNodes) {
-          let isMatch = false;
+    if (rfInstance) {
+      setTimeout(() => {
+        rfInstance.fitView({ duration: 600, padding: 0.2 });
+      }, 200);
+    }
+  }, [jsonData, parseJsonToFlow, rfInstance]);
 
-          // match by path exact
-          if (n.data && n.data.path) {
-            if (n.data.path === normalizedQueryPath || n.data.path.endsWith(normalizedQueryPath.replace(/^\$\./, ""))) {
-              isMatch = true;
-            }
-          }
+  useEffect(() => {
+    const q = (searchQuery || "").trim();
 
-          // match by value (string/number/boolean/null or object deep equality)
-          if (!isMatch && matches && matches.length > 0) {
-            for (const m of matches) {
-              try {
-                if (typeof m === "object") {
-                  if (JSON.stringify(m) === JSON.stringify(n.data.value)) {
-                    isMatch = true;
-                    break;
-                  }
-                } else {
-                  if (String(m) === String(n.data.value)) {
-                    isMatch = true;
-                    break;
-                  }
-                }
-              } catch {
-                // ignore
-              }
-            }
-          }
-
-          if (isMatch) return n.id;
-        }
-        return null;
-      })();
-
-      // apply highlight styles
-      setRfNodes((nds) =>
-        nds.map((n) => {
-          const isMatch =
-            (n.data && n.data.path && (n.data.path === normalizedQueryPath || n.data.path.endsWith(normalizedQueryPath.replace(/^\$\./, "")))) ||
-            (matches &&
-              matches.some((m) => {
-                try {
-                  if (typeof m === "object") return JSON.stringify(m) === JSON.stringify(n.data.value);
-                  return String(m) === String(n.data.value);
-                } catch {
-                  return false;
-                }
-              }));
-
-          return {
-            ...n,
-            style: {
-              ...(n.data && n.data.origStyle ? n.data.origStyle : n.style),
-              background: isMatch ? "#ffd700" : (n.data && n.data.origStyle ? n.data.origStyle.background : n.style.background),
-              border: isMatch ? "2px solid #f59e0b" : (n.data && n.data.origStyle ? n.data.origStyle.border : n.style.border),
-            },
-          };
-        })
-      );
-
-      // pan/center to first matched node
-      if (matchedNodeId) {
-        const found = rfNodes.find((n) => n.id === matchedNodeId);
-        const inst = rfInstanceRef.current;
-        if (found && inst && typeof inst.setCenter === "function") {
-          inst.setCenter(found.position.x, found.position.y, { zoom: 1.2, duration: 400 });
-        }
-      }
-    } catch (err) {
-      // invalid JSONPath or other error -> clear highlights
-      setRfNodes((nds) =>
-        nds.map((n) => ({
+    const resetStyles = () =>
+      setRfNodes((nodes) =>
+        nodes.map((n) => ({
           ...n,
-          style: { ...(n.data && n.data.origStyle ? n.data.origStyle : n.style) },
+          style: {
+            ...n.style,
+            background: BASE_COLORS[n.data.type] || n.style.background,
+            border: "none",
+            boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
+          },
         }))
       );
-      // optional: console.warn("Invalid JSONPath query", err);
+
+    if (!q) {
+      resetStyles();
+      onMatchResult && onMatchResult(null);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, parsed]); // rfNodes intentionally omitted to avoid loop
+
+    let normalized = q.startsWith("$")
+      ? q
+      : q.startsWith("[") || q.startsWith(".")
+      ? `$${q}`
+      : `$.${q}`;
+
+    const targetId = pathMap[normalized];
+
+    if (!targetId) {
+      resetStyles();
+      onMatchResult && onMatchResult(false);
+      return;
+    }
+
+    onMatchResult && onMatchResult(true);
+
+    setRfNodes((nodes) =>
+      nodes.map((n) => ({
+        ...n,
+        style: {
+          ...n.style,
+          background: n.id === targetId ? HIGHLIGHT_STYLES.background : BASE_COLORS[n.data.type],
+          border: n.id === targetId ? HIGHLIGHT_STYLES.border : "none",
+          boxShadow:
+            n.id === targetId ? HIGHLIGHT_STYLES.shadow : "0 3px 8px rgba(0,0,0,0.15)",
+        },
+      }))
+    );
+
+    if (rfInstance) {
+      setTimeout(() => {
+        const current = rfInstance.getNodes().find((n) => n.id === targetId);
+        if (current) {
+          rfInstance.setCenter(current.position.x, current.position.y, {
+            duration: 500,
+            zoom: 1.4,
+          });
+        }
+      }, 60);
+    }
+  }, [searchQuery, pathMap, rfInstance, onMatchResult]);
 
   return (
-    <div className="w-full h-[700px] rounded-lg shadow-lg border border-gray-300 bg-white overflow-hidden">
+    <div className="h-[70vh] rounded-lg border border-neutral-200 overflow-hidden bg-white">
       <ReactFlow
-        nodes={rfNodes || []}
-        edges={rfEdges || []}
+        nodes={rfNodes}
+        edges={rfEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onInit={(inst) => {
-          setReactFlowInstance(inst);
-          rfInstanceRef.current = inst;
-        }}
+        onInit={setRfInstance}
         fitView
-        nodesDraggable={true}
-        nodesConnectable={false}
-        elementsSelectable={false}
       >
-        <Background />
-        <Controls showInteractive={false} />
+        <Background color="#e5e7eb" gap={18} size={1} />
+        <Controls />
       </ReactFlow>
     </div>
   );

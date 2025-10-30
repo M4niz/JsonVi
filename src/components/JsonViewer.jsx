@@ -1,35 +1,24 @@
 import React, { useState } from 'react';
 import NavBar from './common/NavBar';
 import TreeVisualizer from "./TreeVisualizer";
+
 const JsonViewer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [jsonText, setJsonText] = useState(`{
-    "name": "John Doe",
-    "age": 30,
-    "email": "john.doe@example.com",
-    "address": {
-      "street": "123 Main St",
-      "city": "New York",
-      "zip": "10001"
-    },
-    "hobbies": ["reading", "traveling", "swimming"]
-  }`);
+  "name": "John Doe",
+  "age": 30,
+  "email": "john.doe@example.com",
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "zip": "10001"
+  },
+  "hobbies": ["reading", "traveling", "swimming"]
+}`);
   const [isValid, setIsValid] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [visualizedData, setVisualizedData] = useState(null);
-const handleSearch = (queryOrResult) => {
-    // NavBar currently sends a string (the JSONPath query).
-    if (!queryOrResult) {
-      setSearchQuery('');
-      return;
-    }
-    if (typeof queryOrResult === 'string') {
-      setSearchQuery(queryOrResult);
-      return;
-    }
-    // if future NavBar sends objects, adapt here; for now clear
-    setSearchQuery('');
-  };
+  const [searchMessage, setSearchMessage] = useState('');
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -43,52 +32,94 @@ const handleSearch = (queryOrResult) => {
       setErrorMsg(err.message);
     }
   };
+
   const handleVisualize = () => {
-    
     setVisualizedData(jsonText);
   };
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (!query?.trim()) setSearchMessage('');
+  };
+
+  const handleMatchResult = (matched) => {
+    if (matched === null) {
+      setSearchMessage('');
+      return;
+    }
+    setSearchMessage(matched ? 'Match found' : 'No match found');
+    setTimeout(() => setSearchMessage(''), 2500);
+  };
+
   return (
-    <div className="min-h-screen graph-paper-background animate-background">
-      <NavBar onSearch={handleSearch} jsonData={isValid ? JSON.parse(jsonText) : null} />
-      <div className="p-6 flex gap-6">
-        
-  <div className="w-[35%] h-[760px] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
-  {/*<span className="flex flex-col items-start mt-3 py-2 px-6 font-semibold">JSON</span>*/}
-    <textarea
-      className="w-full h-[620px] p-4 border border-gray-300 rounded-lg mb-4 font-mono text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 resize-none"
-      value={jsonText}
-      onChange={handleChange}
-      placeholder=''
-    />
-    <div className="flex flex-col items-center mt-3">
-      <button
-        className="py-2 px-6 rounded-lg bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-800 transition disabled:opacity-50 cursor-pointer"
-        disabled={!isValid}
-        onClick={handleVisualize}
-      >
-        Visualize as Tree
-      </button>
+    <div className="min-h-screen bg-neutral-100">
+      <NavBar onSearch={handleSearch} />
 
-      <div className="mt-2 font-bold">
-        {isValid === null ? (
-          <span className="text-gray-500">Waiting for input...</span>
-        ) : isValid ? (
-          <span className="text-green-600">Valid JSON</span>
-        ) : (
-          <span className="text-red-600">Invalid JSON</span>
-        )}
-      </div>
-    </div>
-  </div>
+      {searchMessage && (
+        <div
+          className={`px-4 py-2 text-center font-semibold border-b ${
+            searchMessage.includes('Match')
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+              : 'bg-rose-50 text-rose-800 border-rose-200'
+          }`}
+        >
+          {searchMessage}
+        </div>
+      )}
 
-  <div className="flex-1 h-[760px] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
-    
-    <div className="text-gray-700 text-center font-medium">
-      <TreeVisualizer jsonData={visualizedData} searchQuery={searchQuery}/>
-    </div>
-  </div>
-</div>
+      <main className="mx-auto items-center max-w-7x2 p-5">
+        <div className="grid grid-cols-12 gap-5">
+          {/* Left card */}
+          <section className="col-span-12 lg:col-span-5 bg-white rounded-xl border border-neutral-200 shadow-sm">
+            <div className="p-5">
+              <h3 className="mb-3 text-lg font-semibold text-neutral-800">JSON Input</h3>
+              <textarea
+                value={jsonText}
+                onChange={handleChange}
+                className={`w-full h-[60vh] font-mono text-sm p-3 rounded-md outline-none transition
+                ${isValid ? 'border border-neutral-300 focus:ring-2 focus:ring-blue-300' : 'border-2 border-rose-500'}`}
+              />
+              {!isValid && (
+                <div className="text-rose-600 mt-2 text-xs">Error: {errorMsg}</div>
+              )}
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  onClick={handleVisualize}
+                  disabled={!isValid}
+                  className={`px-4 py-2 rounded-md text-white text-sm font-medium transition
+                  ${isValid ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800' : 'bg-neutral-400 cursor-not-allowed'}`}
+                >
+                  Visualize as Tree
+                </button>
+                <span
+                  className={`px-2.5 py-1 rounded text-xs font-semibold border
+                  ${isValid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}
+                >
+                  {isValid ? 'Valid JSON' : 'Invalid JSON'}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Right card */}
+          <section className="w-[950px] bg-white rounded-xl border border-neutral-200 shadow-sm">
+            <div className="p-5">
+              <h3 className="mb-3 text-lg font-semibold text-neutral-800">Tree Visualization</h3>
+              {visualizedData ? (
+                <TreeVisualizer
+                  jsonData={visualizedData}
+                  searchQuery={searchQuery}
+                  onMatchResult={handleMatchResult}
+                />
+              ) : (
+                <div className="text-center mt-12 text-neutral-500">
+                  Click "Visualize as Tree" to see the graph
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 };
