@@ -1,3 +1,4 @@
+import { tr } from "framer-motion/client";
 import React, { useState, useEffect, useCallback } from "react";
 import ReactFlow, {
   Background,
@@ -39,6 +40,7 @@ const TreeVisualizer = ({ jsonData }) => {
         padding: 10,
         borderRadius: 8,
         fontWeight: 600,
+        fontSize: 14,
         boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
       },
     });
@@ -57,10 +59,14 @@ const TreeVisualizer = ({ jsonData }) => {
         ? data.map((v, i) => [i, v])
         : Object.entries(data);
 
+      // Dynamic horizontal spacing based on number of children
+      const horizontalSpacing = Math.max(100, entries.length * 60);
+      const verticalSpacing = 180;
+
       entries.forEach(([key, value], index) => {
         const childPosition = {
-          x: position.x + (index - entries.length / 2) * 250,
-          y: position.y + 150,
+          x: position.x + (index - (entries.length - 1) / 2) * horizontalSpacing,
+          y: position.y + verticalSpacing,
         };
         const { nodes: childNodes, edges: childEdges } = parseJsonToFlow(value, id, depth + 1, childPosition);
 
@@ -92,11 +98,10 @@ const TreeVisualizer = ({ jsonData }) => {
     setRfNodes(nodes);
     setRfEdges(edges);
 
-    // Focus animation to root after render
     if (reactFlowInstance) {
       setTimeout(() => {
-        reactFlowInstance.fitView({ duration: 2000, padding: 0.2 });
-        reactFlowInstance.zoomTo(reactFlowInstance.getZoom() * 1.3, { duration: 3000 });
+        reactFlowInstance.fitView({ duration: 1000, padding: 0.2 });
+        reactFlowInstance.zoomTo(reactFlowInstance.getZoom() * 1.5, { duration: 1500 });
       }, 300);
     }
   }, [jsonData, parseJsonToFlow, reactFlowInstance]);
@@ -110,7 +115,7 @@ const TreeVisualizer = ({ jsonData }) => {
         onEdgesChange={onEdgesChange}
         onInit={setReactFlowInstance}
         fitView
-        nodesDraggable={false}
+        nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={false}
       >
