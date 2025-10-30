@@ -17,8 +17,19 @@ const JsonViewer = () => {
   const [isValid, setIsValid] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [visualizedData, setVisualizedData] = useState(null);
-
-
+const handleSearch = (queryOrResult) => {
+    // NavBar currently sends a string (the JSONPath query).
+    if (!queryOrResult) {
+      setSearchQuery('');
+      return;
+    }
+    if (typeof queryOrResult === 'string') {
+      setSearchQuery(queryOrResult);
+      return;
+    }
+    // if future NavBar sends objects, adapt here; for now clear
+    setSearchQuery('');
+  };
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -37,14 +48,9 @@ const JsonViewer = () => {
     setVisualizedData(jsonText);
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-    // TODO: Implement search functionality
-  };
-
   return (
     <div className="min-h-screen graph-paper-background animate-background">
-      <NavBar onSearch={handleSearch} />
+      <NavBar onSearch={handleSearch} jsonData={isValid ? JSON.parse(jsonText) : null} />
       <div className="p-6 flex gap-6">
         
   <div className="w-[35%] h-[760px] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
@@ -79,7 +85,7 @@ const JsonViewer = () => {
   <div className="flex-1 h-[760px] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
     
     <div className="text-gray-700 text-center font-medium">
-      <TreeVisualizer jsonData={visualizedData} />
+      <TreeVisualizer jsonData={visualizedData} searchQuery={searchQuery}/>
     </div>
   </div>
 </div>

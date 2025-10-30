@@ -1,7 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import * as htmlToImage from 'html-to-image';
+import jsonpath from 'jsonpath';
+const NavBar = ({ onSearch, jsonData }) => {
+  const [searchStatus, setSearchStatus] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch(searchInput);
+    }
+  };
+  const handleSearch = (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setSearchStatus('');
+      onSearch(null);
+      return;
+    }
 
-const NavBar = ({ onSearch }) => {
+    try {
+      const jsonObject = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      // Normalize the query to always start with $
+      const normalizedQuery = searchQuery.startsWith('$') 
+        ? searchQuery 
+        : `$.${searchQuery}`;
+
+       // Try to find matches using JSONPath
+      const matches = jsonpath.query(jsonData, normalizedQuery);
+      
+      if (matches && matches.length > 0) {
+        setSearchStatus('Match found');
+        onSearch(normalizedQuery);
+      } else {
+        setSearchStatus('No match found');
+        onSearch('');
+      }
+    } catch (error) {
+      setSearchStatus('Invalid JSONPath query');
+      onSearch('');
+      console.warn('JSONPath query error:', error);
+    }
+  };
   const handleDownload = async () => {
     const reactFlowWrapper = document.querySelector(".react-flow");
     if (!reactFlowWrapper) {
@@ -45,9 +83,11 @@ const NavBar = ({ onSearch }) => {
           <div className="relative">
             <input
               type="text"
-              placeholder="Search nodes..."
+              placeholder="Search JSONPath (e.g., $.name)"
               className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80"
-              onChange={(e) => onSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyPress={handleKeyPress}
             />
             <svg
               className="w-5 h-5 text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2"
@@ -62,6 +102,13 @@ const NavBar = ({ onSearch }) => {
                 strokeLinejoin="round"
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
+              {searchStatus && (
+              <div className={`absolute -bottom-6 left-0 text-sm ${
+                searchStatus === 'Match found' ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {searchStatus}
+              </div>
+            )}
             </svg>
           </div>
 
