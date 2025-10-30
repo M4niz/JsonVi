@@ -1,6 +1,28 @@
 import React from 'react';
+import * as htmlToImage from 'html-to-image';
 
 const NavBar = ({ onSearch }) => {
+  const handleDownload = async () => {
+    const reactFlowWrapper = document.querySelector(".react-flow");
+    if (!reactFlowWrapper) {
+      alert("No visualization found to download!");
+      return;
+    }
+    try {
+      const dataUrl = await htmlToImage.toPng(reactFlowWrapper, {
+        backgroundColor: "white",
+        quality: 1.0,
+        pixelRatio: 2,
+      });
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "json_tree.png";
+      link.click();
+    } catch (error) {
+      console.error("Error generating image:", error);
+    }
+  };
   return (
     <nav className="w-full bg-white/60 backdrop-blur-md shadow-sm px-6 py-4">
       <div className="flex items-center justify-between">
@@ -65,7 +87,7 @@ const NavBar = ({ onSearch }) => {
           </button>
 
           {/* Download Button */}
-          <button
+          <button onClick={handleDownload}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
             title="Download JSON"
           >
