@@ -21,13 +21,13 @@ const TreeVisualizer = ({ jsonData }) => {
 
     if (Array.isArray(data)) {
       label = "Array";
-      bgColor = "#22c55e"; // Green
+      bgColor = "#006224ff";
     } else if (typeof data === "object" && data !== null) {
       label = "Object";
-      bgColor = "#3b82f6"; // Blue
+      bgColor = "#6300dcff";
     } else {
       label = JSON.stringify(data);
-      bgColor = "#f97316"; // Orange
+      bgColor = "#2c4fffff";
     }
 
     nodes.push({
