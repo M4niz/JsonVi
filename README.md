@@ -1,3 +1,5 @@
+JSON Tree Visualizer web application that allows users to visualize JSON data as a hierarchical tree structure with search and highlighting functionality 
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
