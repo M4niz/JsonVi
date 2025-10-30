@@ -46,11 +46,11 @@ const JsonViewer = () => {
     <div className="min-h-screen graph-paper-background animate-background">
       <NavBar onSearch={handleSearch} />
       <div className="p-6 flex gap-6">
-        {/* Left Card (Input Section) */}
-  <div className="w-[35%] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
+        
+  <div className="w-[35%] h-[760px] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
   {/*<span className="flex flex-col items-start mt-3 py-2 px-6 font-semibold">JSON</span>*/}
     <textarea
-      className="w-full h-[800px] p-4 border border-gray-300 rounded-lg mb-4 font-mono text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 resize-none"
+      className="w-full h-[620px] p-4 border border-gray-300 rounded-lg mb-4 font-mono text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 resize-none"
       value={jsonText}
       onChange={handleChange}
       placeholder=''
@@ -76,9 +76,8 @@ const JsonViewer = () => {
     </div>
   </div>
 
-  {/* Right Card (Visualization Section) */}
-  <div className="flex-1 bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
-    {/* Replace this placeholder with your visualizer */}
+  <div className="flex-1 h-[760px] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
+    
     <div className="text-gray-700 text-center font-medium">
       <TreeVisualizer jsonData={visualizedData} />
     </div>

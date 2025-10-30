@@ -102,7 +102,7 @@ const TreeVisualizer = ({ jsonData }) => {
   }, [jsonData, parseJsonToFlow, reactFlowInstance]);
 
   return (
-    <div className="w-full h-[800px] rounded-lg shadow-lg border border-gray-300 bg-white overflow-hidden">
+    <div className="w-full h-[700px] rounded-lg shadow-lg border border-gray-300 bg-white overflow-hidden">
       <ReactFlow
         nodes={rfNodes || []}
         edges={rfEdges || []}
