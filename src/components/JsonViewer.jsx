@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import NavBar from './common/NavBar';
-
+import TreeVisualizer from "./TreeVisualizer";
 const JsonViewer = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [jsonText, setJsonText] = useState(`{
@@ -16,6 +16,9 @@ const JsonViewer = () => {
   }`);
   const [isValid, setIsValid] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [visualizedData, setVisualizedData] = useState(null);
+
+
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -29,6 +32,10 @@ const JsonViewer = () => {
       setErrorMsg(err.message);
     }
   };
+  const handleVisualize = () => {
+    
+    setVisualizedData(jsonText);
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -41,9 +48,9 @@ const JsonViewer = () => {
       <div className="p-6 flex gap-6">
         {/* Left Card (Input Section) */}
   <div className="w-[35%] bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
-  <span className="flex flex-col items-start mt-3 py-2 px-6 font-semibold">JSON</span>
+  {/*<span className="flex flex-col items-start mt-3 py-2 px-6 font-semibold">JSON</span>*/}
     <textarea
-      className="w-full h-[400px] p-4 border border-gray-300 rounded-lg mb-4 font-mono text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 resize-none"
+      className="w-full h-[800px] p-4 border border-gray-300 rounded-lg mb-4 font-mono text-base shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white/80 resize-none"
       value={jsonText}
       onChange={handleChange}
       placeholder=''
@@ -52,6 +59,7 @@ const JsonViewer = () => {
       <button
         className="py-2 px-6 rounded-lg bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-800 transition disabled:opacity-50 cursor-pointer"
         disabled={!isValid}
+        onClick={handleVisualize}
       >
         Visualize as Tree
       </button>
@@ -72,7 +80,7 @@ const JsonViewer = () => {
   <div className="flex-1 bg-white/80 backdrop-blur-lg border border-white border-opacity-30 rounded-lg p-6 shadow-lg">
     {/* Replace this placeholder with your visualizer */}
     <div className="text-gray-700 text-center font-medium">
-      Visualization output will appear here...
+      <TreeVisualizer jsonData={visualizedData} />
     </div>
   </div>
 </div>
