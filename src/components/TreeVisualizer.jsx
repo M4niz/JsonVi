@@ -19,7 +19,7 @@ const HIGHLIGHT_STYLES = {
   shadow: "0 0 16px rgba(91, 255, 54, 0.6)",
 };
 
-const TreeVisualizer = ({ jsonData, searchQuery, onMatchResult }) => {
+const TreeVisualizer = ({ jsonData, searchQuery, onMatchResult, isDarkMode }) => {
   const parseJsonToFlow = useCallback(
     (data, parentId = null, depth = 0, position = { x: 0, y: 0 }, path = "$") => {
       if (data === undefined) return { nodes: [], edges: [], pathMap: {} };
@@ -199,19 +199,28 @@ const TreeVisualizer = ({ jsonData, searchQuery, onMatchResult }) => {
   }, [searchQuery, pathMap, rfInstance, onMatchResult]);
 
   return (
-    <div className="h-[70vh] rounded-lg border border-neutral-200 overflow-hidden bg-white">
-      <ReactFlow
-        nodes={rfNodes}
-        edges={rfEdges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onInit={setRfInstance}
-        fitView
-      >
-        <Background color="#e5e7eb" gap={18} size={1} />
-        <Controls />
-      </ReactFlow>
-    </div>
+    <div
+  className={`h-[70vh] rounded-lg overflow-hidden transition-colors duration-300 relative 
+  ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-neutral-200'}`}
+>
+  <ReactFlow
+    className={`custom-flow ${isDarkMode ? 'dark' : 'light'}`}
+    nodes={rfNodes}
+    edges={rfEdges}
+    onNodesChange={onNodesChange}
+    onEdgesChange={onEdgesChange}
+    onInit={setRfInstance}
+    fitView
+  >
+    <Background 
+      color={isDarkMode ? "#444" : "#e2e2e2"}
+      gap={16}
+      size={1}
+      variant="dots" 
+    />
+    <Controls />
+  </ReactFlow>
+</div>
   );
 };
 

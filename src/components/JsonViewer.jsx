@@ -19,6 +19,8 @@ const JsonViewer = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [visualizedData, setVisualizedData] = useState(null);
   const [searchMessage, setSearchMessage] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -52,27 +54,34 @@ const JsonViewer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <NavBar onSearch={handleSearch} />
-
-      {searchMessage && (
-        <div
-          className={`px-4 py-2 text-center font-semibold border-b ${
-            searchMessage.includes('Match')
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border-rose-200'
-          }`}
-        >
-          {searchMessage}
-        </div>
-      )}
+    <div className={`min-h-screen transition-colors duration-300 ${
+    isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'
+  }`}>
+      <NavBar onSearch={handleSearch} onToggleTheme={toggleTheme} isDarkMode={isDarkMode}/>
+      <div
+  className={`px-4 py-2 text-center font-semibold border-b transition-all duration-500
+    ${searchMessage
+      ? (searchMessage.includes('Match')
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-200 opacity-100'
+          : 'bg-rose-50 text-rose-800 border-rose-200 opacity-100')
+      : 'opacity-0 border-transparent'}`}
+  style={{ minHeight: '2.5rem' }}
+>
+  {searchMessage || ''}
+</div>
 
       <main className="mx-auto items-center max-w-7x2 p-5">
         <div className="grid grid-cols-12 gap-5">
           {/* Left card */}
-          <section className="col-span-12 lg:col-span-5 bg-white rounded-xl border border-neutral-200 shadow-sm">
+          <section className={`col-span-12 lg:col-span-5 rounded-xl border shadow-sm transition-colors duration-300 ${
+    isDarkMode
+      ? 'bg-gray-900 border-gray-700'
+      : 'bg-white border-neutral-200'
+  }`}>
             <div className="p-5">
-              <h3 className="mb-3 text-lg font-semibold text-neutral-800">JSON Input</h3>
+              <h3 className={`mb-3 text-lg font-semibold transition-colors duration-300 ${
+                isDarkMode ? 'text-gray-100' : 'text-neutral-800'
+              }`}>JSON Input</h3>
               <textarea
                 value={jsonText}
                 onChange={handleChange}
@@ -86,7 +95,7 @@ const JsonViewer = () => {
                 <button
                   onClick={handleVisualize}
                   disabled={!isValid}
-                  className={`px-4 py-2 rounded-md text-white text-sm font-medium transition
+                  className={`px-4 py-2 rounded-md text-white text-sm font-medium transition cursor-pointer
                   ${isValid ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800' : 'bg-neutral-400 cursor-not-allowed'}`}
                 >
                   Visualize as Tree
@@ -102,14 +111,19 @@ const JsonViewer = () => {
           </section>
 
           {/* Right card */}
-          <section className="w-[950px] bg-white rounded-xl border border-neutral-200 shadow-sm">
+          <section className={`w-[950px] rounded-xl border shadow-sm transition-colors duration-300 ${
+            isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-neutral-200'
+          }`}>
             <div className="p-5">
-              <h3 className="mb-3 text-lg font-semibold text-neutral-800">Tree Visualization</h3>
+              <h3 className={`mb-3 text-lg font-semibold transition-colors duration-300 ${
+              isDarkMode ? 'text-gray-100' : 'text-neutral-800'
+              }`}>Tree Visualization</h3>
               {visualizedData ? (
                 <TreeVisualizer
                   jsonData={visualizedData}
                   searchQuery={searchQuery}
                   onMatchResult={handleMatchResult}
+                  isDarkMode={isDarkMode}
                 />
               ) : (
                 <div className="text-center mt-12 text-neutral-500">
